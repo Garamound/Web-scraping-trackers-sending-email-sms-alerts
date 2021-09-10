@@ -113,8 +113,7 @@ while True:
     for i in night_hours_list:  # Darker areas of plot background representing day and night
         plt.axvspan(i, i + 1, facecolor='0.2', alpha=0.15)
 
-    axis2 = plt.twinx(
-    )  # instantiate a second axes that shares the same x-axis
+    axis2 = plt.twinx()  # instantiate a second axes that shares the same x-axis
     color = 'tab:blue'
     axis2.set_ylabel('Flow (m3/s)', color=color)
     axis2.plot(state_values_time_list, flow_values_list, color=color)
@@ -125,9 +124,7 @@ while True:
     #plt.show()
 
     img_format = 'png'
-    image_paths = [
-        'C:/Users/Admin/PycharmProjects/Price_Tracker/Stan_wody-Bielany.png'
-    ]
+    image_paths = ['C:/Users/Admin/PycharmProjects/Price_Tracker/Stan_wody-Bielany.png']
 
     alarm_treshold = 1.1
     alarm_hours = 10

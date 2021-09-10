@@ -15,8 +15,8 @@ conn = http.client.HTTPSConnection("hydro.imgw.pl")
 payload = ""
 headers = {
     'Connection': "keep-alive",
-    'sec-ch-ua': "^\^Chromium^^;v=^\^92^^, ^\^"
-}
+    'sec-ch-ua': "^\^Chromium^^;v=^\^92^^, ^\^"}
+
 #keep_alive()
 
 while True:
@@ -44,7 +44,81 @@ while True:
             records['hourly'].update(entry)
         json.dump(records, f, indent=2)
 
+    state_values_time_list = []
+    state_values_level_list = []
+    flow_values_list = []
+
+    for key, value in records["hourly"].items():
+        state_values_time_list.append((key.replace('T', ' '))[:-4])
+        state_values_level_list.append(float(value['value']))
+
+    # Creating darker areas of the plot representing day and night. Converting hours to numbers.
+    integer_hours_list = []
+    night_hours_list = []
+    for date in state_values_time_list:
+        date = date[-5:-1].replace(":", "")
+        if date[0] == '0': date = date[1:3]
+        integer_hours_list.append(int(date))
+
+    # Scrapping and searching for time of sunrise and sunset, creating "night_hours_list"
+    URL = 'https://meteogram.pl/'
+    headers = {
+        "User-Agent":
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Safari/537.36'}
+    page = requests.get(URL, headers=headers)
+    soup = str(BeautifulSoup(page.content, 'html.parser'))[8700:9300]
+    sunrise = int(
+        re.findall(r".+?rise\"\>0?(.+?)\ \<", soup)[0].replace(":", "")[:-1])
+    sunset = int(
+        re.findall(r".+?set\"\>0?(.+?)\ \<", soup)[0].replace(":", "")[:-1])
+
+    for index, item in enumerate(integer_hours_list):
+        if item > sunset or item < sunrise: night_hours_list.append(index)
+
+    # Plotting with matplotlib
+
+    plt.figure(figsize=(12, 7))
+    plot = plt.plot(state_values_time_list,
+                    state_values_level_list,
+                    '-ro',
+                    markersize=4,
+                    zorder=1)
+    plt.grid(True)
+
+    plt.title("Poziom Wisły w Bielanach: " + str(current_state_value) +
+              "cm.        Czas pomiaru: " + current_state_time[0])
+    plt.xlabel('Time')
+    plt.ylabel('Water Level (cm)')
+    ax = plt.gca()
+
+    plt.xticks(rotation=90)
+    for label in ax.get_xaxis().get_ticklabels()[::2]:
+        label.set_visible(False)
+
+    for i in night_hours_list:  # Darker areas of plot background representing day and night
+        plt.axvspan(i, i + 1, facecolor='0.2', alpha=0.15)
+
+    axis2 = plt.twinx()  # instantiate a second axes that shares the same x-axis
+    color = 'tab:blue'
+    axis2.set_ylabel('Flow (m3/s)', color=color)
+    axis2.plot(state_values_time_list, flow_values_list, color=color)
+    axis2.tick_params(axis='y', labelcolor=color)
+
+    plt.grid(True)
+    plt.savefig('Stan_wody-Bielany.png')
+    #plt.show()
+
+    img_format = 'png'
+    image_paths = ['C:/Users/Admin/PycharmProjects/Price_Tracker/Stan_wody-Bielany.png']
+
+    alarm_treshold = 1.1
+    alarm_hours = 10
+    alarm_rate = round((current_state_value / (sum(state_values_level_list[
+        (len(state_values_level_list) -
+         alarm_hours):len(state_values_level_list)]) / alarm_hours)), 6)
+
     time.sleep(1000)
+
 
 
 
