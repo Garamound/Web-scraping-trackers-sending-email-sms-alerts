@@ -9,7 +9,7 @@ import smtplib
 import json
 import time
 import re
-
+"""
 # http request created in Insomnia
 conn = http.client.HTTPSConnection("hydro.imgw.pl")
 payload = ""
@@ -20,25 +20,23 @@ headers = {
 #keep_alive()
 
 while True:
+    
     conn.request("GET", "/api/station/hydro?id=150190340", payload, headers)
     res = conn.getresponse()
     source = res.read()
     text = source.decode("utf-8")
     data = json.loads(source)
+    print(data)"""
 
-    #print(json.dumps(data, indent=2))]
-    """
-    with open('water_data.json', 'r+') as f:
-        for item in f: print(item)
-        for item in f: item.append("index": 3)
-
-        for item in data['waterStateRecords']:
-            json.dump(item, f, indent=2)
-        print("Json file is an empty structure.. Pre-filling file with gathered data..")
-    """
+while True: # # # # # # #
+    with open("txt.txt", encoding="utf8") as f:
+        data = json.loads(f.read())
+    print(data) # # # # # # #
 
     records = {"hourly": {}}
     with open('water_data.json', 'r+') as f:
+        current_state_value = data['status']['currentState']['value']
+        current_state_time = data['status']['currentState']['date']
         for item in data['waterStateRecords']:
             entry = {item['date'] : {"state" : item['state'], "value" : item['value']}}
             records['hourly'].update(entry)

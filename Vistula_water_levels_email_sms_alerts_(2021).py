@@ -11,7 +11,7 @@ from email.mime.image import MIMEImage
 import json
 
 # http request created in Insomnia
-
+"""
 conn = http.client.HTTPSConnection("hydro.imgw.pl")
 payload = ""
 headers = {
@@ -26,13 +26,18 @@ while True:
 
     res = conn.getresponse()
     data = res.read()
-    text = data.decode("utf-8")
-    text2 = json.loads(data)
-    #print(json.dumps(text2, indent=2))
-    print(len(text2['waterStateRecords']))
+    #text = data.decode("utf-8")
+        """
+while True:
+    with open("txt.txt", "r") as f:
+        text = f.read
 
-    for item in text2['waterStateRecords']:
-        print(item['date'])
+
+    #print(json.dumps(text2, indent=2))
+    #print(len(text2['waterStateRecords']))
+
+    #for item in text2['waterStateRecords']:
+     #   print(item['date'])
 
 
     # Web scrapping, searching for all needed values:
