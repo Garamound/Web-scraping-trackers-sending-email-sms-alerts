@@ -15,20 +15,18 @@ conn = http.client.HTTPSConnection("hydro.imgw.pl")
 payload = ""
 headers = {
     'Connection': "keep-alive",
-    'sec-ch-ua': "^\^Chromium^^;v=^\^92^^, ^\^"}
+    'sec-ch-ua': "^\^Chromium^^;v=^\^92^^, ^\^"}"""
 
 #keep_alive()
 
 while True:
-    
+    """
     conn.request("GET", "/api/station/hydro?id=150190340", payload, headers)
     res = conn.getresponse()
     source = res.read()
     text = source.decode("utf-8")
-    data = json.loads(source)
-    print(data)"""
+    data = json.loads(source)"""
 
-while True: # # # # # # #
     with open("txt.txt", encoding="utf8") as f:
         data = json.loads(f.read())
     print(data) # # # # # # #
@@ -40,15 +38,19 @@ while True: # # # # # # #
         for item in data['waterStateRecords']:
             entry = {item['date'] : {"state" : item['state'], "value" : item['value']}}
             records['hourly'].update(entry)
+        for item in data['dischargeRecords']:
+            if item['date'] in records['hourly']:
+                records['hourly'][item['date']]['flow'] = item['value']
         json.dump(records, f, indent=2)
 
     state_values_time_list = []
     state_values_level_list = []
     flow_values_list = []
 
-    for key, value in records["hourly"].items():
+    for key, value in reversed(records["hourly"].items()):
         state_values_time_list.append((key.replace('T', ' '))[:-4])
         state_values_level_list.append(float(value['value']))
+        flow_values_list.append(float(value['flow']))
 
     # Creating darker areas of the plot representing day and night. Converting hours to numbers.
     integer_hours_list = []
@@ -84,7 +86,7 @@ while True: # # # # # # #
     plt.grid(True)
 
     plt.title("Poziom Wisły w Bielanach: " + str(current_state_value) +
-              "cm.        Czas pomiaru: " + current_state_time[0])
+              "cm.        Czas pomiaru: " + current_state_time)
     plt.xlabel('Time')
     plt.ylabel('Water Level (cm)')
     ax = plt.gca()
@@ -104,18 +106,69 @@ while True: # # # # # # #
 
     plt.grid(True)
     plt.savefig('Stan_wody-Bielany.png')
-    #plt.show()
+    plt.show()
 
     img_format = 'png'
     image_paths = ['C:/Users/Admin/PycharmProjects/Price_Tracker/Stan_wody-Bielany.png']
 
-    alarm_treshold = 1.1
-    alarm_hours = 10
-    alarm_rate = round((current_state_value / (sum(state_values_level_list[
-        (len(state_values_level_list) -
-         alarm_hours):len(state_values_level_list)]) / alarm_hours)), 6)
+    alarm_treshold = 1.03
+    water_rising_hours = 10 # current state is compared to mean of given amount of last hours
+    water_rising_rate = round((current_state_value / (sum(state_values_level_list[
+        (len(state_values_level_list) - water_rising_hours):len(state_values_level_list)]) / water_rising_hours)), 6)
 
-    time.sleep(1000)
+
+    # Sending an Email
+
+    def email_alert(subject, body, to):
+        msg = EmailMessage()
+        msg.set_content(body)
+        msg['subject'] = subject
+        msg['to'] = to
+
+        text_part = msg.iter_parts()
+        text_part
+        msg.add_alternative(f"""\
+            <!DOCTYPE html>
+            <html>
+                <body>
+                    <p>Poziom Wisły w Bielanach,</p>
+                    <p>Alarm rate: {water_rising_rate}</p>
+                    <p>Połamania!,</p>
+                    <p>Yo</p>
+                    <img src="cid:Stan_wody-Bielany" ><br>
+                </body>
+            </html>
+            """,
+                            subtype='html')
+
+        counter = 1
+        for fp in image_paths:
+            fp = open(fp, 'rb')
+            msgImage = MIMEImage(fp.read())
+            fp.close()
+            # Define the image's ID as referenced above
+            msgImage.add_header('Content-ID', '<image' + str(counter) + '>')
+            msg.attach(msgImage)
+            counter += 1
+
+        user = "pikeystrikes@gmail.com"
+        msg['from'] = user
+        password = 'agveazinghufpfce'
+
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(user, password)
+        server.send_message(msg)
+        server.quit()
+
+    if water_rising_rate < alarm_treshold:
+        print("the alarm has not been activated. Water rising rate: ", water_rising_rate)
+    else:
+        print("Level is increasing, alarm has been activated. Alarm rate: ",
+              water_rising_rate)
+        email_alert("Hey", "Hello", "grayling96@gmail.com")
+
+    time.sleep(60 * 10)
 
 
 
